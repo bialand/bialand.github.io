@@ -202,7 +202,7 @@ canvasId.onwheel = function(e){
   if(delta>0)draw.VIEW.ZOOM/=1.2;
 
   if (draw.VIEW.ZOOM < 0.1) draw.VIEW.ZOOM = 0.1;
-  if (draw.VIEW.ZOOM > 2  ) draw.VIEW.ZOOM = 4;
+  if (draw.VIEW.ZOOM > 4  ) draw.VIEW.ZOOM = 4;
 }
 
 var loopOnTimer = function(){
