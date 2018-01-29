@@ -200,9 +200,9 @@ var loopOnTimer = function(){
 
   draw.clr();
 
-  draw.lin(-1000, -100, 1000, -100);
-  draw.lin(-1000,  100, 1000,  100);
-  draw.ttt(80-canvasId.width/2, 20-canvasId.height/2 ,"zoom=" +draw.VIEW.ZOOM, 10, "#888");
+  //draw.lin(-1000, -100, 1000, -100);
+  //draw.lin(-1000,  100, 1000,  100);
+  draw.cirr(mouse.worldX,mouse.worldY,3);
   draw.ctx.beginPath(); draw.ctx.arc(20-canvasId.width/2, 20-canvasId.height/2, 10, (Math.PI / 180) * tim * 15, (Math.PI / 180) * (tim * 15 + 190)); draw.ctx.stroke(); tim++;
 
   for (var key in m)
