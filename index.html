@@ -1,0 +1,505 @@
+﻿<html>
+    <head>
+    <title>net code simulation</title>
+    <meta charset='utf-8' />
+    <script src="drawLibrary.js" type="text/javascript" encoding="UTF-8"></script>
+    <script src="gameLibrary.js" type="text/javascript" encoding="UTF-8"></script>
+    </head>
+    <body style=" background:#aaa;width:100%;height:100%;"   oncontextmenu="return false" oncopy="return false;" oncontextmenu="return false" onselectstart="return false;">
+    <canvas id='example' style="z-index:3;position:absolute; top:0;left:0;">html5?</canvas>
+
+<textarea onmouseover="userCod.style.zIndex=3;example.style.zIndex=2;" onmouseleave="userCod.style.zIndex=2;example.style.zIndex=3;" id='userCod' spellcheck="false" style="white-space: pre;position:absolute; top:5%;left:50%;width:50%;height:50%;">
+if(vx==0)vx= MAX_VELOCITY;
+if(x> 90)vx=-MAX_VELOCITY;
+if(x<-90)vx= MAX_VELOCITY;
+vy=0;y=-50;
+
+x+=(vx)*CONST_VELOCITY;
+y+=(vy)*CONST_VELOCITY;
+
+gunX=0; gunY=0;
+gunX=targetX-x;
+gunY=targetY-y;
+
+    </textarea>
+
+<script>
+//alert(document.documentElement.clientHeight)
+//            draw.textToWorld(0,0,99999999999,33, "#000");
+//
+var  draw = CREATE_HTML5_DRAW("example",document.documentElement.clientWidth,document.documentElement.clientHeight);
+//var  draw = CREATE_HTML5_DRAW("example",777,777);
+var  game = CREATE_2D_WORLD(draw);
+
+var settings=game.settings;
+    draw.VIEW.ZOOM=1;
+    draw.VIEW.ZOOM=draw.VIEW.MIN/700;
+    draw.VIEW.X=(document.documentElement.clientWidth/2)/draw.VIEW.ZOOM-200;
+    draw.VIEW.Y=-00;
+
+    settings.gameVelocity     =0.1;
+    settings.showTraffic      =1;
+    settings.serverMemoryPereod  =100;
+
+
+
+/////////////////////////////////////////////////////////
+var clients     = game.createUnit(-140,-200,"meta");
+    clients.clients=[];
+    clients.clientsCount=0;
+    clients.createClient=function(nameString)
+      {
+        clientsCount=0;
+        for (var key in this.clients)
+          {
+            client = this.clients[key];
+            if(  'type' in client  )if (client.type == "client" )
+                clientsCount++;
+          }
+        for (var key in this.clients)
+          {
+            client = this.clients[key];
+            if(  'nameString' in client  )
+                if (client.nameString == nameString )
+                    return client;
+          }
+
+        var newClient=game.createUnit( 0,200-clientsCount*400,"client");
+            newClient.udpBuffer=[];
+            newClient.players  =[];
+            newClient.player=game.createUnit( 0,0,"autoUnit");
+                newClient.player.r=22;
+                newClient.player.color="#535";if(clientsCount==0)newClient.player.color="green";if(clientsCount==1)newClient.player.color="blue";
+                newClient.player.anchor  =newClient;
+                newClient.player.myClient=newClient;
+                newClient.player.maxVelo=100;
+
+            newClient.width =200;
+            newClient.height=170;
+            newClient.color=newClient.player.color;
+            newClient.name=nameString;
+            newClient.packTick=0;
+            newClient.timeCode=0;
+            newClient.localTime=Math.random()*100000;
+            newClient.maxInterpolationDelay=Math.random()*100000;
+            newClient.tickRate=10;
+            newClient.pingOut=200;
+            newClient.pingIn =200;
+            newClient.udpCounterIn=0;
+            newClient.udpCounterOut=0;
+            newClient.udpPort=game.createUnit( newClient.x-161,newClient.y,"udpPort");newClient.udpPort.color=newClient.color;
+
+            newClient.action=function()
+                {
+                  this.localTime+=settings.gameVelocity*dt;
+                  for (var key in this.udpBuffer)//прием пакетов
+                      if(  'type' in (this.udpBuffer[key])  )if ( this.udpBuffer[key]['type'] == "waitPack" )
+                      {
+                          var p=this.player;
+                          var d=this.udpBuffer[key].udpData;
+
+                          if(this.udpBuffer[key].udpCounter>this.udpCounterIn)
+                            {
+                              this.udpCounterIn=this.udpBuffer[key].udpCounter;
+                              for (var key2 in d.units)if(  'client' in d.units[key2]  )
+                                {
+                                  var d2=d.units[key2];
+                                  var pp;
+                                  if( !(d2.client.name in this.players))
+                                      {
+                                          pp=game.createUnit( 22,22,"autoUnit");
+                                          this.players[d2.client.name]=pp;
+                                          pp.color="#911";
+                                          pp.color=d2.client.color;
+                                          pp.anchor=this;
+                                          pp.client=d2.client;
+                                          pp.gun=0.3;
+                                          pp.r=15
+                                          pp.alpha=0.8;
+                                          pp.updateTime=this.localTime;
+                                          pp.x=d2.x;pp.y=d2.y;
+                                          pp.xNext=pp.x;pp.yNext=pp.y;
+                                          pp.xLast=pp.x;pp.yLast=pp.y;
+                                          if(d2.client==this)pp.alpha=0.3;
+                                      }
+                                  pp=this.players[d2.client.name];
+                                  pp.xLast =pp.xNext; pp.yLast =pp.yNext;
+                                  pp.xxLast=pp.xxNext;pp.yyLast=pp.yyNext;
+
+                                  pp.updateTimeLast=pp.updateTime;
+                                  pp.updateTime=this.localTime;
+                                  pp.updateTimeDelta=pp.updateTime-pp.updateTimeLast;
+                                  pp.interpolationTime=0;
+
+                                  pp.x =d2.x; pp.y =d2.y;
+                                  pp.xx=d2.xx;pp.yy=d2.yy;
+                                  pp.vx=d2.vx;pp.vy=d2.vy;
+                                  pp.xNext =pp.x; pp.yNext =pp.y;
+                                  pp.xxNext=pp.xx;pp.yyNext=pp.yy;
+                                }
+                            }
+                      }
+                  for (var key in this.players)if(  'client' in  this.players[key]  )
+                      {
+                          var p=this.players[key];
+                          p.interpolationTime+=settings.gameVelocity*dt;
+                          var maxT=p.updateTimeDelta;
+                          if(maxT>p.maxInterpolationDelay)maxT=p.maxInterpolationDelay;
+                          if(maxT==0)maxT=1;
+                          var interp=p.interpolationTime/maxT;
+                          if(interp>1)interp=1;
+                          p.x=p.xLast+(p.xNext - p.xLast)*interp;
+
+
+                      }
+                  this.packTick+=settings.gameVelocity*dt;
+                      if(this.packTick>=1000/this.tickRate)
+                      {
+                          this.udpCounterOut++;
+                          this.packTick-=1000/this.tickRate;
+                          var  udpPack=game.createUnit(this.udpPort.x,this.udpPort.y,"udpPack");
+                          udpPack.udpData={};
+                          udpPack.udpData.x=this.player.x;
+                          udpPack.udpData.y=this.player.y;
+                          udpPack.udpData.vx=this.player.vx;
+                          udpPack.udpData.vy=this.player.vy;
+                          udpPack.udpData.xx=this.player.xx;
+                          udpPack.udpData.yy=this.player.yy;
+                          udpPack.color=this.color;
+                          udpPack.ping=this.pingOut;
+                          udpPack.time=0;
+                          udpPack.timeCode=this.timeCode;
+                          udpPack.sender=this;
+                          udpPack.serverPlayer=this.serverPlayer
+                          udpPack.udpCounter=this.udpCounterOut;
+                          udpPack.startPoint=this.udpPort;
+                          udpPack.endPoint=server.udpPort;
+                          udpPack.direction={};
+                          udpPack.direction.x=udpPack.endPoint.x-udpPack.startPoint.x;
+                          udpPack.direction.y=udpPack.endPoint.y-udpPack.startPoint.y;
+                          game.normalize(udpPack.direction);
+                          udpPack.action=function()
+                              {
+                                  this.time+=settings.gameVelocity*dt;
+                                  this.x=this.startPoint.x+this.direction.x*(this.time/this.ping)-20*this.direction.ny*Math.sin(this.time/this.ping*3.1416);
+                                  this.y=this.startPoint.y+this.direction.y*(this.time/this.ping)-20*this.direction.ny*Math.sin(this.time/this.ping*3.1416);
+                                  if(this.time>= this.ping)
+                                  {
+                                      this.type="waitPack";
+                                      this.time=0;
+                                      this.action=function()
+                                      {
+                                          this.time+=settings.gameVelocity*dt;
+                                          if(this.time>= 1000)
+                                              {this.type="toDelete";this.action="";}
+                                      };
+                                      server.udpBuffer.push(this);
+                                  }
+                              }
+                      }
+                }
+            newClient.draw=function()
+              {
+                draw.ctx.globalAlpha = 0.5;
+                draw.ctx.fillStyle ="#000";
+                draw.textToWorld(this.x,this.y,this.name, 22, "#000");
+                draw.ctx.globalAlpha = 1;
+                draw.rectBorder(this.x,this.y,this.width,this.height);
+
+
+              }
+            this.clients[nameString]=newClient;
+
+        server.createPlayer(newClient);
+        clientsCount++;
+        return newClient;
+      }
+//////////////////////////////////////////////////////
+var server      = game.createUnit(0, 0  ,"server");
+    server.clients=[];
+    server.udpBuffer=[];
+    server.memorySize=10;
+    server.memoryPereod=10;
+    server.memoryTick  =0;
+    server.extrapolation=0;
+    server.tickRate=10;
+    server.udpPort=game.createUnit( server.x-171,server.y,"udpPort");
+    server.createPlayer=function(forClient)
+        {
+            var newPlayer= game.createUnit(0, 0  ,"autoUnit");
+            this.clients.push(newPlayer);
+            forClient.serverPlayer=newPlayer;
+            newPlayer.myClient=forClient;
+            newPlayer.memoryTick=0;
+            newPlayer.r=22;
+            newPlayer.packTick=0;
+            newPlayer.velo=100;
+            newPlayer.timeCode=0;
+            newPlayer.udpCounterIn=0;
+            newPlayer.udpCounterOut=0;
+            newPlayer.anchor=this;
+            newPlayer.color=newPlayer.myClient.color;
+            newPlayer.memory=[];
+            newPlayer.historyForApponents=[];
+            newPlayer.historyForApponents.add=function(name,parent)
+                {
+                    if(!(name in this))
+                    {
+                        this[name]=game.createUnit(parent.x, parent.y  ,"autoUnit");
+                        this[name].color=parent.color;
+                        this[name].r=11;
+                    }
+
+
+                };
+            for(var i=0;i<server.memorySize;i++)
+                {
+                    newPlayer.memory[i]={};
+                    newPlayer.memory[i].x=newPlayer.x;
+                    newPlayer.memory[i].y=newPlayer.y;
+                    newPlayer.memory[i].xx=0;
+                    newPlayer.memory[i].yy=0;
+                }
+        }
+    server.draw=function()
+        {
+          draw.ctx.globalAlpha = 0.4;
+          draw.ctx.fillStyle ="333";
+          draw.textToWorld(this.x,this.y,"server", 22, "#000");
+          draw.ctx.globalAlpha = 1;
+          draw.rectBorder(this.x,this.y,200,180);
+                    
+
+        }
+    server.action=function()
+        {
+            this.memoryTick+=settings.gameVelocity*dt;
+                if(this.memoryTick>=settings.serverMemoryPereod)
+                {
+                    this.memoryTick-=settings.serverMemoryPereod;
+                    for (var key in this.clients)//обработка игроков
+                        if(  'type' in this.clients[key]  )
+                        {
+                            var p=this.clients[key] ;
+
+                            for(var i=this.memorySize-1;i>=1;i--)
+                            {
+                                p.memory[i].x=p.memory[i-1].x;
+                                p.memory[i].y=p.memory[i-1].y;
+                            }
+                            p.memory[0].x=p.x;
+                            p.memory[0].y=p.y;
+                        }
+                }
+            for (var key in this.udpBuffer)//прием ip пакетов
+                if(  'type' in (this.udpBuffer[key])  )if ( this.udpBuffer[key]['type'] == "waitPack" )
+                {
+
+                    var p=this.udpBuffer[key].serverPlayer;
+                    if(this.udpBuffer[key].udpCounter>p.udpCounterIn)
+                    {
+
+                        p.udpCounterIn=this.udpBuffer[key].udpCounter;
+                        p.timeCode=this.udpBuffer[key].timeCode;
+
+                        p.x=this.udpBuffer[key].udpData.x;
+                        p.y=this.udpBuffer[key].udpData.y;
+                        p.xx=this.udpBuffer[key].udpData.xx;
+                        p.yy=this.udpBuffer[key].udpData.yy;
+                        p.vx=this.udpBuffer[key].udpData.vx;
+                        p.vy=this.udpBuffer[key].udpData.vy;
+
+                    }
+                }
+            for (var key in this.clients)//обработка игроков
+                if(  'type' in (this.clients[key])  )if ( this.clients[key]['type'] == "autoUnit" )
+                {
+
+                    var p=this.clients[key];
+
+                    p.tickRate=this.tickRate;
+                    if(settings.serverExtrapolation)p.x+=settings.gameVelocity*dt*p.vx;
+                    p.packTick  +=settings.gameVelocity*dt;
+
+                    if(p.packTick>=1000/p.tickRate)
+                    {
+                        p.udpCounterOut++;
+                        p.packTick-=1000/p.tickRate;
+                        var udpPack=game.createUnit(server.x,server.y,"udpPack");
+                            udpPack.udpData={};
+                                udpPack.udpData.units=[];
+                                    for (var key2 in this.clients)//обработка игроков
+                                        if(  'type' in (this.clients[key2])  )if ( this.clients[key2]['type'] == "autoUnit" )
+                                        {
+                                            var p2=this.clients[key2];
+                                            var tmp={};
+                                            tmp.x =p2.x ; tmp.y =p2.y ;
+                                            tmp.xx=p2.xx; tmp.yy=p2.yy;
+                                            tmp.vx=p2.vx; tmp.vy=p2.vy;
+                                            tmp.client=p2.myClient;
+                                            udpPack.udpData.units.push(tmp);
+                                        }
+                                udpPack.udpData.x=p.x;
+                                udpPack.udpData.y=p.y;
+                                udpPack.udpData.xx=p.xx;
+                                udpPack.udpData.yy=p.yy;
+                                udpPack.udpData.vx=p.vx;
+                                udpPack.udpData.vy=p.vy;
+                            udpPack.color=p.color;
+                            udpPack.ping=p.myClient.pingIn;
+                            udpPack.time=0;
+                            udpPack.timeCode=performance.now();
+                            udpPack.udpCounter=p.udpCounterOut;
+                            udpPack.startPoint=this.udpPort;
+                            udpPack.endPoint=p.myClient.udpPort;
+                            udpPack.myClient=p.myClient;
+                            udpPack.direction={};
+                            udpPack.direction.x=udpPack.endPoint.x-udpPack.startPoint.x;
+                            udpPack.direction.y=udpPack.endPoint.y-udpPack.startPoint.y;
+                            game.normalize(udpPack.direction);
+                            udpPack.x=p.x;
+                            udpPack.y=p.y;
+                            udpPack.action=function()
+                            {
+
+                                this.x=this.startPoint.x+this.direction.x*(this.time/this.ping)-20*this.direction.ny*Math.sin(this.time/this.ping*3.1416);
+                                this.y=this.startPoint.y+this.direction.y*(this.time/this.ping)-20*this.direction.nx*Math.sin(this.time/this.ping*3.1416);
+
+                                this.time+=settings.gameVelocity*dt;
+                                if(this.time>= this.ping)
+                                {
+                                    this.type="waitPack";
+                                    this.time=0;
+                                    this.action=function()
+                                                {
+                                                    this.time+=settings.gameVelocity*dt;
+                                                    if(this.time>= 1000)
+                                                    {this.type="toDelete";this.action="";}
+                                                };
+                                    this.myClient.udpBuffer.push(this);
+                                }
+                            }
+                    }
+
+
+                    p.memory[0].x=p.x
+                    p.memory[0].y=p.y;
+                    if(p.memoryTick>=settings.serverMemoryPereod)
+                    {
+                        p.memoryTick-=settings.serverMemoryPereod;
+                        for(var i=server.memorySize-1;i>=1;i--)
+                        {
+                            p.memory[i].x=p.memory[i-1].x;
+                            p.memory[i].y=p.memory[i-1].y;
+                        }
+                    }
+
+
+                }
+        }
+/////////////////////////////////////////////////////////
+var GS=clients.createClient("green");
+    var G = clients.clients["green"].player;
+        G.velo=100;
+        G.vx=G.velo;
+        G.anchor=clients.clients["green"];
+        G.action=function()
+            {
+                //eval(userCod.innerHTML);
+                if(this.x> 90)this.vx=-this.velo;
+                if(this.x<-90)this.vx= this.velo;
+                this.vy=0;
+                this.y=50;
+
+                this.x+=settings.gameVelocity*dt*this.vx/1000;
+                this.y+=settings.gameVelocity*dt*this.vy/1000;
+
+                this.xx=0; this.yy=0;
+                if('blue' in this.myClient.players)
+                {
+                    var vrag=this.myClient.players["blue"];
+                    this.xx=vrag.x-this.x;
+                    this.yy=vrag.y-this.y;
+                }
+            }
+var BS=clients.createClient("blue");
+    var B = clients.clients["blue"].player;
+        B.action=function()
+            {
+                var target=B;
+                if('green' in this.myClient.players)target=this.myClient.players["green"];
+                var targetX=target.x;
+                var targetY=target.y;
+                var targetVX=target.vx;
+                var targetVY=target.vy;
+                var x   =this.x;
+                var y   =this.y;
+                var vx  =this.vx;
+                var vy  =this.vy;
+                var gunX=this.xx;
+                var gunY=this.yy;
+                var MAX_VELOCITY=this.maxVelo;
+                var CONST_VELOCITY=settings.gameVelocity*dt/1000;
+                eval(userCod.value);
+
+                this.x =x;
+                this.y =y;
+                this.vx=vx;
+                this.vy=vy;
+                this.xx=gunX;
+                this.yy=gunY;
+
+            }
+        B.onEvent=function()
+        {
+            userCod.style.zIndex=3;
+            game.canvasId.style.zIndex=2;
+        }
+
+var СписокКнопокИПолзунковУправления;
+    var tmp0=game.createUI("button",200, 370,200,20,"showTraffic"        ,settings);
+    var tmp0=game.createUI("scroll",200, 340,200,20,"gameVelocity"       ,settings);
+    var tmp0=game.createUI("button",200, 310,200,20,"ShowCode"           ,settings);tmp0.action="";    tmp0.onEvent=function()    {              userCod.style.zIndex=3; game.canvasId.style.zIndex=2;};
+
+    var tmp0=game.createUI("scroll",200,   0,200,20,"tickRate"           ,server  );tmp0.minValue=2;tmp0.maxValue=60;
+    var tmp0=game.createUI("button",200,  40,200,20,"extrapolation"      ,server  );
+
+    var tmp0=game.createUI("scroll",200,   0,200,20,"tickRate"           ,GS);tmp0.color="green";tmp0.minValue=2;tmp0.maxValue=60;
+    var tmp0=game.createUI("scroll",200,  30,200,20,"pingIn"             ,GS);tmp0.color="green";tmp0.minValue=1;tmp0.maxValue=500;
+    var tmp0=game.createUI("scroll",200,  60,200,20,"pingOut"            ,GS);tmp0.color="green";tmp0.minValue=1;tmp0.maxValue=500;
+
+    var tmp0=game.createUI("scroll",200,   0,200,20,"tickRate"           ,BS);tmp0.color="#5555ff";tmp0.minValue=2;tmp0.maxValue=60;
+    var tmp0=game.createUI("scroll",200,- 30,200,20,"pingIn"             ,BS);tmp0.color="#5555ff";tmp0.minValue=1;tmp0.maxValue=500;
+    var tmp0=game.createUI("scroll",200,- 60,200,20,"pingOut"            ,BS);tmp0.color="#5555ff";tmp0.minValue=1;tmp0.maxValue=500;
+
+
+
+
+
+/*
+    blueServer.action=function()
+    {
+        this.ping=settings.serverPingToGreen;
+        this.lag=(performance.now()-this.timeCode)*settings.gameVelocity;
+        var lag2=this.lag-greenServer.memoryTick;
+        if(lag2>=0)
+        {
+
+            this.lagNumber= Math.floor(lag2/settings.serverMemoryPereod);
+            this.lagDelta=(lag2-blueServer.lagNumber*settings.serverMemoryPereod)/settings.serverMemoryPereod;
+            this.greenX=greenServer.memory[(this.lagNumber+1)| 0].x*(1-this.lagDelta)+greenServer.memory[(blueServer.lagNumber+2)| 0].x*blueServer.lagDelta;
+            this.greenY=greenServer.memory[(this.lagNumber+1)| 0].y*(1-this.lagDelta)+greenServer.memory[(blueServer.lagNumber+2)| 0].y*blueServer.lagDelta;
+            this.lagNumber2= Math.floor(lag2/greenServer.memoryPereod/2);
+            this.lagDelta2=(lag2/this.lagNumber2*greenServer.memoryPereod)/greenServer.memoryPereod;
+
+            this.XX=blueServer.memory[(blueServer.lagNumber2+1)| 0].xx*(1-this.lagDelta2)+blueServer.memory[(blueServer.lagNumber2+2)| 0].xx*blueServer.lagDelta2;
+            this.YY=blueServer.memory[(blueServer.lagNumber2+1)| 0].yy*(1-this.lagDelta2)+blueServer.memory[(blueServer.lagNumber2+2)| 0].yy*blueServer.lagDelta2;
+            //draw.textToWorld(this.XX,this.YY ,Math.floor(this.lag), 12, "#000");
+        }
+
+    }
+*/
+
+</script>
+</body>
+</html>
