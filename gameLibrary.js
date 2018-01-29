@@ -127,6 +127,20 @@ var createUI = function(type2,x,y,w,h,value,own){
 
   return a;
 }
+var mouseCoords = {
+  getX: function(e)
+    {
+      if (e.pageX)    return e.pageX;
+      else if (e.clientX)    return e.clientX+(document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+      return 0;
+    },
+  getY: function(e)
+    {
+      if (e.pageY)return e.pageY;
+      else if (e.clientY)    return e.clientY+(document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+      return 0;
+    }
+}
 
 canvasId.onmousemove = function(e){
   mouse.left.click=0;
@@ -140,18 +154,19 @@ canvasId.onmousemove = function(e){
   }
   if ("layerX" in E) { mouse.X = E.layerX; mouse.Y = E.layerY; }
   if ("x"      in E) { mouse.X = E.x     ; mouse.Y = E.y     ; }
+  if ("pageX"  in E) { mouse.X = E.pageX ; mouse.Y = E.pageY ; }
   mouse.worldX=xToWorld(mouse.X);
   mouse.worldY=yToWorld(mouse.Y);
   if (mouse.left.down  ==1){mouse.left.dx  =mouse.X;mouse.left.dy  =mouse.Y;}
   if (mouse.middle.down==1){draw.VIEW.X-=(mouse.X-mouse.middle.dx)/draw.VIEW.ZOOM; draw.VIEW.Y-=(mouse.Y-mouse.middle.dy)/draw.VIEW.ZOOM;  mouse.middle.dx=mouse.X;mouse.middle.dy=mouse.Y;}
   if (mouse.right.down ==1){mouse.right.dx =mouse.X;mouse.right.dy =mouse.Y;}
   }
-
 canvasId.onmousedown = function(e){
   mouse.left.click=0;
   var E = e || event;
   if ("layerX" in E) { mouse.X = E.layerX; mouse.Y = E.layerY; }
   if ("x"      in E) { mouse.X = E.x     ; mouse.Y = E.y     ; }
+  if ("pageX"  in E) { mouse.X = E.pageX ; mouse.Y = E.pageY ; }
   mouse.worldX=xToWorld(mouse.X);
   mouse.worldY=yToWorld(mouse.Y);
 
@@ -166,21 +181,19 @@ canvasId.onmousedown = function(e){
   if (E.which==2){mouse.middle.down=1;mouse.middle.dx=mouse.X;mouse.middle.dy=mouse.Y;}
   if (E.which==3){mouse.right.down =1;mouse.right.dx =mouse.X;mouse.right.dy =mouse.Y;}
 }
-
 canvasId.onmouseup = function(e){
   mouse.left.click=0;
   var E = e || event;
   if ("layerX" in E) { mouse.X = E.layerX; mouse.Y = E.layerY; }
   if ("x"      in E) { mouse.X = E.x     ; mouse.Y = E.y     ; }
+  if ("pageX"  in E) { mouse.X = E.pageX ; mouse.Y = E.pageY ; }
   mouse.worldX=xToWorld(mouse.X);
   mouse.worldY=yToWorld(mouse.Y);
   if (E.which==1){mouse.left.down  =0;mouse.left.ux  =mouse.X;mouse.left.uy  =mouse.Y;}
   if (E.which==2){mouse.middle.down=0;mouse.middle.ux=mouse.X;mouse.middle.uy=mouse.Y;}
   if (E.which==3){mouse.right.down =0;mouse.right.ux =mouse.X;mouse.right.uy =mouse.Y;}
 }
-
 canvasId.oncontextmenu= function(e){return false;};
-
 canvasId.onwheel = function(e){
   var E = e || event;
   var delta = E.deltaY || E.detail || E.wheelDelta;
@@ -189,7 +202,7 @@ canvasId.onwheel = function(e){
   if(delta>0)draw.VIEW.ZOOM/=1.2;
 
   if (draw.VIEW.ZOOM < 0.1) draw.VIEW.ZOOM = 0.1;
-  if (draw.VIEW.ZOOM > 2  ) draw.VIEW.ZOOM = 2;
+  if (draw.VIEW.ZOOM > 2  ) draw.VIEW.ZOOM = 4;
 }
 
 var loopOnTimer = function(){
