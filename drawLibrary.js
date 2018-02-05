@@ -31,14 +31,12 @@ var clr = function()
     ctx.fillStyle = "black";
     ctx.translate(canvasId.width/2, canvasId.height/2);
   }
-
 var lin = function(x, y, xx, yy) {
     ctx.beginPath()
     ctx.moveTo((-VIEW.X +x) * VIEW.ZOOM, (-VIEW.Y -y) * VIEW.ZOOM);
     ctx.lineTo((-VIEW.X +xx) * VIEW.ZOOM, (-VIEW.Y -yy) * VIEW.ZOOM);
     ctx.stroke();
 }
-
 var rect = function(x, y, w,h) {
   ctx.save();
   ctx.scale(VIEW.ZOOM, VIEW.ZOOM);
@@ -50,6 +48,7 @@ var rectBorder= function(x, y, w,h) {
   ctx.save();
   ctx.scale(VIEW.ZOOM, VIEW.ZOOM);
   ctx.translate(x-VIEW.X, -y-VIEW.Y);
+  ctx.beginPath();
   ctx.rect(-w/2, -h/2, w, h);
   ctx.stroke();
   ctx.restore();
@@ -74,7 +73,7 @@ var cirr = function(x, y, r, a) {
 }
 var ttt = function(x, y, t, sz, cl) {
 
-    ctx.font = sz + "px Arial"; ctx.fillStyle = cl; ctx.textAlign = "center"; ctx.fillText(t, x, y);
+    ctx.font = sz + "px Arial"; ctx.fillStyle = cl;  ctx.fillText(t, x, y);
    }
 var textToWorld = function(x, y, t, sz, cl) {
   ctx.save();
@@ -87,8 +86,7 @@ var textToWorld = function(x, y, t, sz, cl) {
   ctx.fillText(t, 0, 0);
   ctx.restore();
 }
-
-var circ =  function (x, y, r)      //////////////////////////////////////////////////// PAINT
+var circ =  function (x, y, r)
   {
       ctx.beginPath();
       ctx.arc((-VIEW.X +x) * VIEW.ZOOM, (-VIEW.Y -y) * VIEW.ZOOM, r*VIEW.ZOOM, 0, Math.PI * 2);
@@ -108,7 +106,7 @@ return{
   cirr:cirr,
   textToWorld:textToWorld,
   canvasId:canvasId,
-'VIEW':VIEW
-}
+  'VIEW':VIEW
+  }
 
 };
